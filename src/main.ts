@@ -28,6 +28,7 @@ interface AiAssistantSettings {
 	imgFolder: string;
 	language: string;
 	customEndpoint: string;
+	useResponsesApi: boolean;
 }
 
 const DEFAULT_SETTINGS: AiAssistantSettings = {
@@ -42,6 +43,7 @@ const DEFAULT_SETTINGS: AiAssistantSettings = {
 	imgFolder: "AiAssistant/Assets",
 	language: "",
 	customEndpoint: "",
+	useResponsesApi: false,
 };
 
 export default class AiAssistantPlugin extends Plugin {
@@ -65,6 +67,7 @@ export default class AiAssistantPlugin extends Plugin {
 				effectiveModel,
 				this.settings.maxTokens,
 				customEndpoint,
+				this.settings.useResponsesApi,
 			);
 		}
 	}
@@ -185,27 +188,36 @@ class AiAssistantSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl("h2", { text: "Settings for my AI assistant." });
 
-		new Setting(containerEl).setName("OpenAI API Key").addText((text) =>
-			text
-				.setPlaceholder("Enter OpenAI key here")
-				.setValue(this.plugin.settings.openAIapiKey)
-				.onChange(async (value) => {
-					this.plugin.settings.openAIapiKey = value;
-					await this.plugin.saveSettings();
-					this.plugin.build_api();
-				}),
-		);
+		new Setting(containerEl)
+			.setName("OpenAI / Custom Endpoint API Key")
+			.setDesc(
+				"API key for OpenAI or any custom inference endpoint. " +
+				"When using a custom endpoint (e.g. NVIDIA), enter that provider's API key here.",
+			)
+			.addText((text) =>
+				text
+					.setPlaceholder("Enter API key here")
+					.setValue(this.plugin.settings.openAIapiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.openAIapiKey = value;
+						await this.plugin.saveSettings();
+						this.plugin.build_api();
+					}),
+			);
 
-		new Setting(containerEl).setName("Anthropic API Key").addText((text) =>
-			text
-				.setPlaceholder("Enter Anthropic key here")
-				.setValue(this.plugin.settings.anthropicApiKey)
-				.onChange(async (value) => {
-					this.plugin.settings.anthropicApiKey = value;
-					await this.plugin.saveSettings();
-					this.plugin.build_api();
-				}),
-		);
+		new Setting(containerEl)
+			.setName("Anthropic API Key")
+			.setDesc("API key for Anthropic (used only when no custom endpoint is set and a Claude model is selected).")
+			.addText((text) =>
+				text
+					.setPlaceholder("Enter Anthropic key here")
+					.setValue(this.plugin.settings.anthropicApiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.anthropicApiKey = value;
+						await this.plugin.saveSettings();
+						this.plugin.build_api();
+					}),
+			);
 		containerEl.createEl("h3", { text: "Custom Inference Endpoint" });
 
 		new Setting(containerEl)
@@ -241,6 +253,22 @@ class AiAssistantSettingTab extends PluginSettingTab {
 						this.plugin.build_api();
 					}),
 			);
+
+		new Setting(containerEl)
+			.setName("Use Responses API")
+			.setDesc(
+				"Use the /v1/responses endpoint instead of /v1/chat/completions. " +
+				"Required for some providers (e.g. NVIDIA inference-api.nvidia.com with GPT models).",
+			)
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.useResponsesApi)
+					.onChange(async (value) => {
+						this.plugin.settings.useResponsesApi = value;
+						await this.plugin.saveSettings();
+						this.plugin.build_api();
+					});
+			});
 
 		containerEl.createEl("h3", { text: "Text Assistant" });
 
