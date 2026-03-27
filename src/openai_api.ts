@@ -10,11 +10,15 @@ export class OpenAIAssistant {
 	maxTokens: number;
 	apiKey: string;
 
-	constructor(apiKey: string, modelName: string, maxTokens: number) {
-		this.apiFun = new OpenAI({
+	constructor(apiKey: string, modelName: string, maxTokens: number, baseURL?: string) {
+		const config: { apiKey: string; dangerouslyAllowBrowser: boolean; baseURL?: string } = {
 			apiKey: apiKey,
 			dangerouslyAllowBrowser: true,
-		});
+		};
+		if (baseURL) {
+			config.baseURL = baseURL;
+		}
+		this.apiFun = new OpenAI(config);
 		this.modelName = modelName;
 		this.maxTokens = maxTokens;
 		this.apiKey = apiKey;
@@ -132,16 +136,19 @@ export class OpenAIAssistant {
 
 export class AnthropicAssistant extends OpenAIAssistant {
 	anthropicApiKey: string;
+	anthropicBaseURL: string;
 
 	constructor(
 		openAIapiKey: string,
 		anthropicApiKey: string,
 		modelName: string,
 		maxTokens: number,
+		baseURL?: string,
 	) {
 		super(openAIapiKey, modelName, maxTokens);
 
 		this.anthropicApiKey = anthropicApiKey;
+		this.anthropicBaseURL = baseURL || "https://api.anthropic.com/v1/messages";
 	}
 
 	text_api_call = async (
@@ -151,7 +158,7 @@ export class AnthropicAssistant extends OpenAIAssistant {
 	) => {
 		try {
 			const response = await request({
-				url: "https://api.anthropic.com/v1/messages",
+				url: this.anthropicBaseURL,
 
 				method: "POST",
 
